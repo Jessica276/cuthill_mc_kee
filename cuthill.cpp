@@ -32,6 +32,7 @@ class Excentricite{
         void set_maxL(int noeud);
         int min_path(int noeud,int dest);
         int research_max(Vector_int list);
+        void cuthill(Matrix A);
         void generateDOT(Matrix adjMat,const string& dotfilename);
         void renderGraph(const string& dotFilename,const string& outputFilename);
 };
@@ -164,6 +165,26 @@ int Excentricite::research_max(Vector_int list){
     return max;
 }
 
+void Excentricite::cuthill(Matrix A){
+    for(int sommet=1;sommet<=int(A.size());sommet++){
+        Vector_int list;
+        int max;
+
+        cout<<"\nNoeud "<<sommet;
+        for(int i=1;i<=int(graph.size());i++){
+            list.push_back(min_path(sommet,i));
+        }
+
+        for(auto l:list){
+            max = research_max(list);
+        }
+        cout<<"\nL excentricite du sommet "<<sommet<<" est "<<max<<endl;
+        cout<<"------------------------------";
+    }
+    cout<<endl;
+    
+}
+
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
     ofstream dotFile(dotfilename);
     if(!dotFile){
@@ -196,36 +217,15 @@ void Excentricite::renderGraph(const string& dotFilename,const string& outputFil
 }
 
 
+
+
 int main(){
     Excentricite a;
     a.displayMatrix(a.get_matrix());
     a.profil();
     a.displayGraph();
     cout<<endl;
-
-    for(int sommet=1;sommet<=int(a.get_matrix().size());sommet++){
-        Vector_int list;
-        int max;
-
-        cout<<"\nNoeud "<<sommet<<endl;
-        for(int i=1;i<=int(a.graph.size());i++){
-            cout<<"\nLa distance entre "<<sommet<<"  et "<< i << " : "<< a.min_path(sommet,i);
-            //cout<<typeid(a.min_path(sommet,i)).name();
-            list.push_back(a.min_path(sommet,i));
-        }
-
-        cout<<endl;
-        cout<<"\nLa liste des distances obtenue est : [";
-        for(auto l:list){
-            cout<<l<<" ";
-            max = a.research_max(list);
-        }
-        cout<<"]"<<endl;
-        cout<<"\nL excentricite du sommet "<<sommet<<" est "<<max<<endl;
-        cout<<"------------------------------";
-    }
-    cout<<endl;
-    
+    a.cuthill(a.get_matrix());
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
 
