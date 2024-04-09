@@ -63,7 +63,7 @@ void Excentricite::displayMatrix(Matrix M){
 }
 
 void Excentricite::initializeData(){
-    ifstream file("data1.txt");      //Ouvre le fichier data.txt
+    ifstream file("data.txt");      //Ouvre le fichier data.txt
 
     if(file){
         file>>this->n;
@@ -169,11 +169,12 @@ void Excentricite::cuthill(Matrix A){
         list_excentricity.insert(make_pair(sommet,max));
     }
 
-    cout<<"\nList of excentricity : \n";
+    //Stockage des sommets et leurs excentricites
+    cout<<"\nListe des excentricites : \n";
     for(auto l:list_excentricity){
         int key_ = l.first;
         int value_ = l.second;
-        cout<<key_<<" : "<<value_<<endl;    //Stockage des sommets et leurs excentricites
+        cout<<key_<<" : "<<value_<<endl;    
     }
 
     //Research of the maximum of the excentricity
@@ -183,9 +184,20 @@ void Excentricite::cuthill(Matrix A){
 
     if(max_it != list_excentricity.end()){
         max_excentricity = max_it->second;
-        cout<<"\nmax of excentricity : "<<max_excentricity;
+        cout<<"\nLa valeur maximale de l excentricite est: "<<max_excentricity<<endl;
     }
-    cout << endl;
+    else{
+        cout<<"\nLa liste est vide"<<endl;
+    }
+    
+    //Numerotation des sommets
+    for(auto it=list_excentricity.begin();it!=list_excentricity.end();it++){
+        if(it->second == max_excentricity){
+            cout<<"Sommet : "<<it->first<<endl;
+        }
+    }
+
+
         
 }
 
