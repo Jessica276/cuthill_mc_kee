@@ -5,7 +5,7 @@
 #include<map>
 #include<set>
 #include<deque>
-#include<typeinfo>
+#include<algorithm>
 
 using namespace std;
 
@@ -31,7 +31,6 @@ class Excentricite{
         Matrix get_matrix();
         void set_maxL(int noeud);
         int min_path(int noeud,int dest);
-        int research_max(Vector_int list);
         void cuthill(Matrix A);
         void generateDOT(Matrix adjMat,const string& dotfilename);
         void renderGraph(const string& dotFilename,const string& outputFilename);
@@ -151,21 +150,9 @@ int Excentricite::min_path(int noeud,int dest){
     return 0;
 }
 
-int Excentricite::research_max(Vector_int list){
-    int max = list[0];
-    int temp;
-
-    for(int i=1; i<int(list.size());i++) {
-        temp = list[i];
-        if(temp>max) {
-            max = temp; 
-        }
-    }
-
-    return max;
-}
-
 void Excentricite::cuthill(Matrix A){
+    map<int,int> list_excentricity;
+
     for(int sommet=1;sommet<=int(A.size());sommet++){
         Vector_int list;
         int max;
@@ -175,13 +162,22 @@ void Excentricite::cuthill(Matrix A){
             list.push_back(min_path(sommet,i));
         }
 
-        for(auto l:list){
-            max = research_max(list);
-        }
+        max = *max_element(list.begin(),list.end());
         cout<<"\nL excentricite du sommet "<<sommet<<" est "<<max<<endl;
         cout<<"------------------------------";
+        list_excentricity.insert(make_pair(sommet,max));
     }
+
+    cout<<"\nlist_excentricity : \n";
+    for(auto l:list_excentricity){
+        int key_ = l.first;
+        int value_ = l.second;
+        cout<<key_<<" : "<<value_<<endl;    //Stockage des sommets leurs excentricites
+    }
+
+
     cout<<endl;
+    
     
 }
 
