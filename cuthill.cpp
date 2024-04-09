@@ -152,6 +152,7 @@ int Excentricite::min_path(int noeud,int dest){
 
 void Excentricite::cuthill(Matrix A){
     map<int,int> list_excentricity;
+    int max_excentricity;
 
     for(int sommet=1;sommet<=int(A.size());sommet++){
         Vector_int list;
@@ -168,17 +169,24 @@ void Excentricite::cuthill(Matrix A){
         list_excentricity.insert(make_pair(sommet,max));
     }
 
-    cout<<"\nlist_excentricity : \n";
+    cout<<"\nList of excentricity : \n";
     for(auto l:list_excentricity){
         int key_ = l.first;
         int value_ = l.second;
-        cout<<key_<<" : "<<value_<<endl;    //Stockage des sommets leurs excentricites
+        cout<<key_<<" : "<<value_<<endl;    //Stockage des sommets et leurs excentricites
     }
 
+    //Research of the maximum of the excentricity
+    auto max_it = max_element(list_excentricity.begin(),list_excentricity.end(),[](const auto &a,const auto &b){
+        return a.second < b.second;
+    });
 
-    cout<<endl;
-    
-    
+    if(max_it != list_excentricity.end()){
+        max_excentricity = max_it->second;
+        cout<<"\nmax of excentricity : "<<max_excentricity;
+    }
+    cout << endl;
+        
 }
 
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
