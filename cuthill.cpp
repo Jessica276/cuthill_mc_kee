@@ -194,6 +194,13 @@ void Excentricite::cuthill(Matrix A){
     for(auto it=list_excentricity.begin();it!=list_excentricity.end();it++){
         if(it->second == max_excentricity){
             cout<<"Sommet : "<<it->first<<endl;
+            for(auto pair:this->graph){
+                int key = pair.first;
+                cout<<"here"<<key<<endl;
+                for(auto value:pair.second){
+                    cout<<value<<endl;
+                }
+            }
         }
     }
 
