@@ -43,7 +43,7 @@ class Excentricite{
         Vector get_pi();
         int stockage(Matrix A);
         int get_first_node();
-        void numerotation(int first_node);
+        Matrix numerotation(int first_node);
         void generateDOT(Matrix adjMat,const string& dotfilename);
         void renderGraph(const string& dotFilename,const string& outputFilename);
 };
@@ -264,7 +264,7 @@ int Excentricite::get_first_node(){
     return first_node;
 }
 
-void Excentricite::numerotation(int first_node){
+Matrix Excentricite::numerotation(int first_node){
     deque<int>file;
     set<int> visited;
     file.push_back(first_node);
@@ -321,7 +321,25 @@ void Excentricite::numerotation(int first_node){
         cout<<endl;
     }
 
+    Matrix newMatrix; // Initialise une nouvelle matrice de taille n x n avec des zéros
 
+    // Parcours de la nouvelle numérotation
+    for (const auto& pair : numerotation) {
+        int oldIdx = pair.first - 1; // Indice de l'ancien noeud
+        int newIdx = pair.second.begin()->second - 1; // Indice du nouveau noeud
+
+        // Copie de la ligne de l'ancien indice vers la nouvelle position
+        for (int j = 0; j < n; ++j) {
+            newMatrix[newIdx][j] = this->A[oldIdx][j];
+        }
+
+        // Copie de la colonne de l'ancien indice vers la nouvelle position
+        for (int i = 0; i < n; ++i) {
+            newMatrix[i][newIdx] = this->A[i][oldIdx];
+        }
+    }
+
+    return newMatrix;
 }
 
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
@@ -366,7 +384,15 @@ int main(){
     int npf = a.stockage(a.get_matrix());
     cout<<"=> NPF = "<<npf<<endl;
     int first_node = a.get_first_node();
-    a.numerotation(first_node);
+    cout<<"--------------------"<<endl;
+    Matrix B=a.numerotation(first_node);
+
+    cout<<"here"<<endl;
+    a.displayMatrix(B);
+
+    int npf1 = a.stockage(B);
+    cout<<"=> NPF = "<<npf1<<endl;
+
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
 
