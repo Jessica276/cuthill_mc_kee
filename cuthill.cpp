@@ -15,13 +15,17 @@ typedef vector<Vector> Matrix;
 
 class Excentricite{
     private:
-        int n;  //dimension de la matrice
+        int n;          //dimension de la matrice
         Matrix A;
-        int max_lengh;
-
+        Vector D;       //pour stocker les éléments diagonaux de la matrice L
+        Vector APi;     //Valeur de la matrice
+        Vector li;      //nombre de valeur avant la valeur du diagonal
+        Vector pi;      //i - li
+        Vector nDiag;
+        int max_length;
     public:
-        Matrix B;
         map<int,vector<int>>graph;
+        map<int,int>length_neighbor;
         Excentricite();
         ~Excentricite();
         void displayMatrix(Matrix M);
@@ -31,7 +35,15 @@ class Excentricite{
         Matrix get_matrix();
         void set_maxL(int noeud);
         int min_path(int noeud,int dest);
-        void cuthill(Matrix A);
+        Vector get_APi();
+        Vector get_solution();
+        Vector get_diag();
+        Vector get_num_diag();
+        Vector get_li();
+        Vector get_pi();
+        int stockage(Matrix A);
+        int get_first_node();
+        void numerotation(int first_node);
         void generateDOT(Matrix adjMat,const string& dotfilename);
         void renderGraph(const string& dotFilename,const string& outputFilename);
 };
@@ -49,12 +61,32 @@ Matrix Excentricite::get_matrix(){
 }
 
 void Excentricite::set_maxL(int sommet) {
-    this->max_lengh = sommet;
+    this->max_length = sommet;
+}
+
+Vector Excentricite::get_diag(){
+    return this->D;
+}
+
+Vector Excentricite::get_APi(){
+    return this->APi;
+}
+
+Vector Excentricite::get_num_diag(){
+    return this->nDiag;
+}
+
+Vector Excentricite::get_li(){
+    return this->li;
+}
+
+Vector Excentricite::get_pi(){
+    return this->pi;
 }
 
 void Excentricite::displayMatrix(Matrix M){
-    for(int i=0;i<this->n;i++){
-        for(int j=0;j<this->n;j++){
+    for(int i=0;i<int(M.size());i++){
+        for(int j=0;j<int(M[i].size());j++){
             cout<<M[i][j]<<" ";
         }
         cout<<endl;
@@ -63,7 +95,7 @@ void Excentricite::displayMatrix(Matrix M){
 }
 
 void Excentricite::initializeData(){
-    ifstream file("data.txt");      //Ouvre le fichier data.txt
+    ifstream file("data2.txt");      //Ouvre le fichier data.txt
 
     if(file){
         file>>this->n;
@@ -78,13 +110,13 @@ void Excentricite::initializeData(){
             A.push_back(temp);
         }
 
-        cout<<"Voici la matrice donnee :"<<endl;
+        cout<<"The matrix :"<<endl;
 
         file.close();
     }
 
     else{
-        cout<<"Erreur d'ouverture du fichier"<<endl;
+        cout<<"Error opening file"<<endl;
     }
 }
 
@@ -101,15 +133,60 @@ void Excentricite::profil(){
 void Excentricite::displayGraph(){
     for(int i=1;i<=this->n;i++){
         vector<int>& neighbor = this->graph[i];
-        cout<<"Les voisins du noeud "<<i<<" : ";
+        cout<<"Node s neighbors "<<i<<" : ";
 
         for(int n:neighbor){
             cout<<n<<" ";
         }
         cout<<endl;
+        length_neighbor.insert(make_pair(i,neighbor.size()));
+        // cout<<"Length of "<<i<<" : "<<neighbor.size()<<endl;
     }
 }
 
+int Excentricite::stockage(Matrix A){
+    int count = 1;
+    int npf = 0;
+    for(int i=0;i<this->n;i++){
+        int indice = 0;
+        bool passage = false;
+        for(int j=0;j<i+1;j++){ 
+            auto element = this->A[i][j]; 
+            //Numerotation du diagonal 
+            if(i==j){
+                this->nDiag.push_back(count);
+            }
+
+            if(element != 0 || A[i][i] == 0){
+                indice = j;
+                passage = true;
+                this->APi.push_back(element);
+                count++;
+            }
+            else{
+                if(j>indice && passage){
+                    this->APi.push_back(element);
+                    count++;
+                }
+            }
+        }
+
+        //Calcul de l[i] = nDiag[i] - nDiag[i-1] - 1
+        this->li.push_back(this->nDiag[i] - this->nDiag[i-1] - 1);
+
+        //Calcul de p[i] = i - l[i]
+        this->pi.push_back(i + 1 - this->li[i]);
+    }
+
+    for(auto i:li){
+        npf += i + 1;
+    }
+    
+
+    return npf;
+}
+
+//BFS
 int Excentricite::min_path(int noeud,int dest){
     deque<map<int,vector<int>>>file;
     set<int> visited;
@@ -150,62 +227,101 @@ int Excentricite::min_path(int noeud,int dest){
     return 0;
 }
 
-void Excentricite::cuthill(Matrix A){
-    map<int,int> list_excentricity;
-    int max_excentricity;
+int Excentricite::get_first_node(){
+    int first_node = 0;
+    int temp_ecc = -1;
+    int temp_neigh = 999;
 
-    for(int sommet=1;sommet<=int(A.size());sommet++){
-        Vector_int list;
+    for(auto g:this->graph){
+        vector<int> list;
+        int neigh_size = int(g.second.size());
+
         int max;
+        cout<<"\nNode "<<g.first;
+       
+        for(int i=1;i<=int(this->graph.size());i++){
+            list.push_back(min_path(g.first,i));
+        }
+        
+        max = *max_element(list.begin(),list.end());
+        cout<<"\nThe eccentricity of each node "<<g.first<<" is "<<max<<endl;
+        cout<<"------------------------------"<<endl;
+        //cout<<endl<<max<<" "<<neigh_size<<" "<<g.first<<endl;
+        if(temp_ecc <= max){
+            if(temp_neigh>neigh_size){
+                temp_ecc = max;
+                temp_neigh = neigh_size;
+                first_node = g.first;
+            }
+        }
+        //cout<<temp_ecc<<" "<<temp_neigh<<" "<<first_node<<endl;
+    }
 
-        cout<<"\nNoeud "<<sommet;
-        for(int i=1;i<=int(graph.size());i++){
-            list.push_back(min_path(sommet,i));
+    cout<<"Eccentricity max : "<<temp_ecc<<endl;
+    cout<<"Length  : "<<temp_neigh<<endl;
+    cout<<"Node : "<<first_node<<endl;
+    
+    return first_node;
+}
+
+void Excentricite::numerotation(int first_node){
+    deque<int>file;
+    set<int> visited;
+    file.push_back(first_node);
+    //Visiter le noeud
+    visited.insert(first_node);
+    vector<int>N;
+    int counter = 1;
+    map<int,map<int,int>> numerotation;
+    map<int,int> cuthill;
+    cuthill.insert(make_pair(counter,(this->n+1)-counter));
+    numerotation.insert(make_pair(first_node,cuthill));
+
+    while(!file.empty()){
+        int node = file.front();    //Accéder au premier élément
+        file.pop_front();
+
+        vector<int>neighbors = this->graph[node];
+        
+
+        for(int i=0;i<int(neighbors.size());i++){
+            int nb_neighbors_i = int(this->graph[neighbors[i]].size());
+            for(int j=i+1;j<int(neighbors.size());j++){
+                int nb_neighbors_j = int(this->graph[neighbors[j]].size());
+                if(nb_neighbors_i > nb_neighbors_j){
+                    swap(neighbors[i],neighbors[j]);
+                    swap(nb_neighbors_i,nb_neighbors_j);
+                }else if(nb_neighbors_i == nb_neighbors_j){
+                    if(neighbors[i]  > neighbors[j]){
+                        swap(neighbors[i],neighbors[j]);
+                    }
+                }
+            }
         }
 
-        max = *max_element(list.begin(),list.end());
-        cout<<"\nL excentricite du sommet "<<sommet<<" est "<<max<<endl;
-        cout<<"------------------------------";
-        list_excentricity.insert(make_pair(sommet,max));
-    }
-
-    //Stockage des sommets et leurs excentricites
-    cout<<"\nListe des excentricites : \n";
-    for(auto l:list_excentricity){
-        int key_ = l.first;
-        int value_ = l.second;
-        cout<<key_<<" : "<<value_<<endl;    
-    }
-
-    //Research of the maximum of the excentricity
-    auto max_it = max_element(list_excentricity.begin(),list_excentricity.end(),[](const auto &a,const auto &b){
-        return a.second < b.second;
-    });
-
-    if(max_it != list_excentricity.end()){
-        max_excentricity = max_it->second;
-        cout<<"\nLa valeur maximale de l excentricite est: "<<max_excentricity<<endl;
-    }
-    else{
-        cout<<"\nLa liste est vide"<<endl;
-    }
-    
-    //Numerotation des sommets
-    for(auto it=list_excentricity.begin();it!=list_excentricity.end();it++){
-        if(it->second == max_excentricity){
-            cout<<"Sommet : "<<it->first<<endl;
-            for(auto pair:this->graph){
-                int key = pair.first;
-                cout<<"here"<<key<<endl;
-                for(auto value:pair.second){
-                    cout<<value<<endl;
-                }
+        for(auto neighbor:neighbors){
+            if(visited.insert(neighbor).second){
+                file.push_back(neighbor);
+                counter++;
+                map<int,int> cuthill;
+                cuthill.insert(make_pair(counter,(this->n+1)-counter));
+                numerotation.insert(make_pair(neighbor,cuthill));
             }
         }
     }
 
+    cout<<"\nNumerotation : "<<endl;
+    cout<<"i     CM     CMI"<<endl;
+    cout<<"----------------"<<endl;
+    for(auto key:numerotation){
+        cout<<key.first<<"  ->  ";
+        for(auto m:key.second){
+            cout<<m.first<<"  ->  "<<m.second;
+        }
+        cout<<endl;
+    }
 
-        
+
 }
 
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
@@ -227,7 +343,6 @@ void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename)
     dotFile << "}\n";
 
     dotFile.close();
-
 }
 
 //Fonction qui rend le fichier dot en image
@@ -248,7 +363,10 @@ int main(){
     a.profil();
     a.displayGraph();
     cout<<endl;
-    a.cuthill(a.get_matrix());
+    int npf = a.stockage(a.get_matrix());
+    cout<<"=> NPF = "<<npf<<endl;
+    int first_node = a.get_first_node();
+    a.numerotation(first_node);
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
 
