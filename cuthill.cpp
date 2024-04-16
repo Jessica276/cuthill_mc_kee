@@ -291,7 +291,8 @@ Matrix Excentricite::numerotation(int first_node){
                 if(nb_neighbors_i > nb_neighbors_j){
                     swap(neighbors[i],neighbors[j]);
                     swap(nb_neighbors_i,nb_neighbors_j);
-                }else if(nb_neighbors_i == nb_neighbors_j){
+                }
+                else if(nb_neighbors_i == nb_neighbors_j){
                     if(neighbors[i]  > neighbors[j]){
                         swap(neighbors[i],neighbors[j]);
                     }
@@ -314,32 +315,68 @@ Matrix Excentricite::numerotation(int first_node){
     cout<<"i     CM     CMI"<<endl;
     cout<<"----------------"<<endl;
     for(auto key:numerotation){
-        cout<<key.first<<"  ->  ";
+        int index = key.first;
+        cout<<index<<"  ->  ";
         for(auto m:key.second){
-            cout<<m.first<<"  ->  "<<m.second;
+            int cmk = m.first;
+            int cmki = m.second;
+            cout<<cmk<<"  ->  "<<cmki;
         }
         cout<<endl;
     }
 
-    Matrix newMatrix; // Initialise une nouvelle matrice de taille n x n avec des zéros
+    int numNodes = this->n;
+    vector<int> cmki(numNodes);
+    for(const auto& entry : numerotation){
+        int node = entry.first;
+        int cmk = entry.second.begin()->first;
+        int cmki_val = entry.second.begin()->second;
+        cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
+    }
 
-    // Parcours de la nouvelle numérotation
-    for (const auto& pair : numerotation) {
-        int oldIdx = pair.first - 1; // Indice de l'ancien noeud
-        int newIdx = pair.second.begin()->second - 1; // Indice du nouveau noeud
-
-        // Copie de la ligne de l'ancien indice vers la nouvelle position
-        for (int j = 0; j < n; ++j) {
-            newMatrix[newIdx][j] = this->A[oldIdx][j];
-        }
-
-        // Copie de la colonne de l'ancien indice vers la nouvelle position
-        for (int i = 0; i < n; ++i) {
-            newMatrix[i][newIdx] = this->A[i][oldIdx];
+    // Création de Mat_prim à partir de Mat en utilisant cmki
+    Matrix Mat_prim(this->n, Vector (this->n, 0));
+    for(int i = 0; i < this->n; i++){
+        for(int j=0;j<this->n;j++){
+            Mat_prim[i][j] = this->A[cmki[i] - 1][cmki[j] - 1]; // -1 pour l'indexation 0-based
         }
     }
 
-    return newMatrix;
+    // Afficher Mat_prim
+    cout << "\nMat_prim:" << endl;
+    for(const auto& row : Mat_prim){
+        for(const auto& val : row){
+            cout << val << " ";
+    }
+    cout << endl;
+}
+
+
+    // int numNodes = this->n;
+    // Matrix P;
+    // P.resize(numNodes,Vector(numNodes, 0));
+
+    // for(const auto& entry : numerotation){
+    //     int node = entry.first;
+    //     if (!entry.second.empty()){
+    //         int newPosition = entry.second.begin()->second;
+    //         P[node][newPosition] = 1;
+    //     }
+    //     else {
+    //         cout<<"The map is empty"<<endl;
+    //     }
+    // }
+
+
+    // // Print the permutation matrix P
+    // cout << "\nPermutation Matrix P:" << endl;
+    // for(const auto& row : P){
+    //     for(const auto& val : row){
+    //         cout << val << " ";
+    //     }
+    //     cout << endl;
+    // }
+    return Mat_prim;
 }
 
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
@@ -351,9 +388,9 @@ void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename)
 
     dotFile << "graph G {\n";
     const int n = adjacencyMatrix.size();
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-            if (adjacencyMatrix[i][j] != 0) {
+    for(int i=0;i<n;i++) {
+        for(int j=i+1;j<n;j++) {
+            if(adjacencyMatrix[i][j] != 0) {
                 dotFile << i << " -- " << j << " [label=\"" << adjacencyMatrix[i][j] << "\"];\n";
             }
         }
@@ -385,14 +422,10 @@ int main(){
     cout<<"=> NPF = "<<npf<<endl;
     int first_node = a.get_first_node();
     cout<<"--------------------"<<endl;
-    Matrix B=a.numerotation(first_node);
-
-    cout<<"here"<<endl;
-    a.displayMatrix(B);
-
+    Matrix B = a.numerotation(first_node);
+    //a.displayMatrix(B);
     int npf1 = a.stockage(B);
     cout<<"=> NPF = "<<npf1<<endl;
-
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
 
