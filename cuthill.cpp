@@ -22,6 +22,7 @@ class Excentricite{
         Vector li;      //nombre de valeur avant la valeur du diagonal
         Vector pi;      //i - li
         Vector nDiag;
+        Vector b;       //second membre
         int max_length;
     public:
         map<int,vector<int>>graph;
@@ -29,12 +30,14 @@ class Excentricite{
         Excentricite();
         ~Excentricite();
         void displayMatrix(Matrix M);
+        void displayVector(Vector V);
         void initializeData();
         void profil();
         void displayGraph();
         Matrix get_matrix();
         void set_maxL(int noeud);
         int min_path(int noeud,int dest);
+        Vector get_vector();
         Vector get_APi();
         Vector get_solution();
         Vector get_diag();
@@ -43,7 +46,10 @@ class Excentricite{
         Vector get_pi();
         int stockage(Matrix A);
         int get_first_node();
-        Matrix numerotation(int first_node);
+        Matrix numerotation(int first_node);Vector solution;
+        void diagonal();
+        void lower_resolution();
+        void upper_resolution();
         void generateDOT(Matrix adjMat,const string& dotfilename);
         void renderGraph(const string& dotFilename,const string& outputFilename);
 };
@@ -58,6 +64,10 @@ Excentricite::~Excentricite(){
 
 Matrix Excentricite::get_matrix(){
     return this->A;
+}
+
+Vector Excentricite::get_vector(){
+    return this->b;
 }
 
 void Excentricite::set_maxL(int sommet) {
@@ -94,8 +104,14 @@ void Excentricite::displayMatrix(Matrix M){
     cout<<endl;
 }
 
+void Excentricite::displayVector(Vector V){
+    for(int j=0;j<int(V.size());j++){
+        cout<<V[j]<<"  ";
+    }
+}
+
 void Excentricite::initializeData(){
-    ifstream file("data2.txt");      //Ouvre le fichier data.txt
+    ifstream file("data3.txt");      //Ouvre le fichier data.txt
 
     if(file){
         file>>this->n;
@@ -108,6 +124,15 @@ void Excentricite::initializeData(){
                 temp.push_back(element);
             }
             A.push_back(temp);
+        }
+        for(int j=0;j<this->n;j++){
+            float element;
+            file>>element;
+            this->b.push_back(element);
+        }
+        D.resize(n);
+        for(int i=0;i<this->n;i++){
+            this->solution.push_back(0.0);
         }
 
         cout<<"The matrix :"<<endl;
@@ -180,9 +205,10 @@ int Excentricite::stockage(Matrix A){
 
     for(auto i:li){
         npf += i + 1;
+        cout<<"i: "<<i<<" "<<endl;
+        cout<<npf<<endl;
     }
     
-
     return npf;
 }
 
@@ -330,8 +356,11 @@ Matrix Excentricite::numerotation(int first_node){
     for(const auto& entry : numerotation){
         int node = entry.first;
         int cmk = entry.second.begin()->first;
+        //cout<<" cmk:"<<cmk<<endl;
         int cmki_val = entry.second.begin()->second;
+        //cout<<" cmki_val:"<<cmki_val<<endl;
         cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
+        //cout<<"cmki[cmk - 1] : "<<cmki[cmk - 1]<<endl;
     }
 
     // Création de Mat_prim à partir de Mat en utilisant cmki
@@ -343,40 +372,66 @@ Matrix Excentricite::numerotation(int first_node){
     }
 
     // Afficher Mat_prim
-    cout << "\nMat_prim:" << endl;
+    cout << "\nNew matrix :" << endl;
     for(const auto& row : Mat_prim){
         for(const auto& val : row){
             cout << val << " ";
+        }
+        cout << endl;
     }
-    cout << endl;
+
+    return Mat_prim;
 }
 
+void Excentricite::diagonal(){
+    float sum = 0;
+    for(int i=0; i<int(this->nDiag.size());i++){
+        for(int j=pi[i]; j<i;j++){
+            for(int k=pi[j];k<j;k++){
+                if(k>= pi[i])
+                    sum += this->APi.at(nDiag[i] - i + k) * this->APi.at(nDiag[k]) * this->APi.at(nDiag[j] - j + k);
+            }
+            APi[nDiag[i] - i + j] = 1.0 / this->APi.at(nDiag[j]) * (this->APi.at(nDiag[i] - i + j) - sum);
+            sum = 0;
+        }
+        for(int k=pi[i];k<i;k++){
+            sum += APi[nDiag[k]] * APi[nDiag[i] - i + k] * APi[nDiag[i] - i + k];
+        }
+        APi[nDiag[i]] -= sum;
+        sum = 0;
+    }
+}
 
-    // int numNodes = this->n;
-    // Matrix P;
-    // P.resize(numNodes,Vector(numNodes, 0));
+//Matrice triangulaire inférieur
 
-    // for(const auto& entry : numerotation){
-    //     int node = entry.first;
-    //     if (!entry.second.empty()){
-    //         int newPosition = entry.second.begin()->second;
-    //         P[node][newPosition] = 1;
-    //     }
-    //     else {
-    //         cout<<"The map is empty"<<endl;
-    //     }
-    // }
+void Excentricite::lower_resolution(){
+    float sum = 0;
+    for(int i=0;i<int(this->nDiag.size());i++){
+        sum = 0;
+        for(int j=this->pi.at(i);j<i;j++)
+        {
+            sum += this->APi[nDiag[i] - i + j] * this->solution[j];
+        }
+        solution[i] = (this->b[i] - sum);
+    }
+}
 
+//Matrice triangulaire supérieur
 
-    // // Print the permutation matrix P
-    // cout << "\nPermutation Matrix P:" << endl;
-    // for(const auto& row : P){
-    //     for(const auto& val : row){
-    //         cout << val << " ";
-    //     }
-    //     cout << endl;
-    // }
-    return Mat_prim;
+void Excentricite::upper_resolution(){
+    float sum = 0;
+    for(int i=0;i<int(this->nDiag.size());i++){
+        solution[i] /= this->APi[nDiag[i]];
+    }
+    for(int j=nDiag.size()-1;j>=0;j--){
+        sum = 0;
+        for(int i=j+1;i<int(this->nDiag.size());i++){
+            if(pi[i]<=j){
+                sum += APi[nDiag[i] - i + j] * solution[i];
+            }
+        }
+        this->solution[j] = ((this->solution[j] - sum));
+    }
 }
 
 void Excentricite::generateDOT(Matrix adjacencyMatrix,const string& dotfilename){
@@ -411,7 +466,6 @@ void Excentricite::renderGraph(const string& dotFilename,const string& outputFil
 
 
 
-
 int main(){
     Excentricite a;
     a.displayMatrix(a.get_matrix());
@@ -423,9 +477,13 @@ int main(){
     int first_node = a.get_first_node();
     cout<<"--------------------"<<endl;
     Matrix B = a.numerotation(first_node);
-    //a.displayMatrix(B);
     int npf1 = a.stockage(B);
     cout<<"=> NPF = "<<npf1<<endl;
+    a.diagonal();
+    a.lower_resolution();
+    a.upper_resolution();
+    cout<<"La solution est :\n";
+    a.displayVector(a.solution);
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
 
