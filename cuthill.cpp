@@ -44,7 +44,9 @@ class Excentricite{
         Vector get_num_diag();
         Vector get_li();
         Vector get_pi();
-        int stockage(Matrix A);
+        void stockage(Matrix A);
+        int get_npf();
+        void initialize_stockage_profil();
         int get_first_node();
         Matrix numerotation(int first_node);Vector solution;
         void diagonal();
@@ -92,6 +94,23 @@ Vector Excentricite::get_li(){
 
 Vector Excentricite::get_pi(){
     return this->pi;
+}
+
+int Excentricite::get_npf(){
+    int npf = 0;
+
+    for(auto i:this->li){
+        npf+= i + 1;
+    }
+
+    return npf;
+}
+
+void Excentricite::initialize_stockage_profil(){
+    this->APi.erase(this->APi.begin(),this->APi.end());
+    this->nDiag.erase(this->nDiag.begin(),this->nDiag.end());
+    this->li.erase(this->li.begin(),this->li.end());
+    this->pi.erase(this->pi.begin(),this->pi.end());
 }
 
 void Excentricite::displayMatrix(Matrix M){
@@ -169,14 +188,14 @@ void Excentricite::displayGraph(){
     }
 }
 
-int Excentricite::stockage(Matrix A){
+void Excentricite::stockage(Matrix A){
     int count = 1;
     int npf = 0;
     for(int i=0;i<this->n;i++){
         int indice = 0;
         bool passage = false;
         for(int j=0;j<i+1;j++){ 
-            auto element = this->A[i][j]; 
+            auto element = A[i][j]; 
             //Numerotation du diagonal 
             if(i==j){
                 this->nDiag.push_back(count);
@@ -202,14 +221,6 @@ int Excentricite::stockage(Matrix A){
         //Calcul de p[i] = i - l[i]
         this->pi.push_back(i + 1 - this->li[i]);
     }
-
-    for(auto i:li){
-        npf += i + 1;
-        cout<<"i: "<<i<<" "<<endl;
-        cout<<npf<<endl;
-    }
-    
-    return npf;
 }
 
 //BFS
@@ -336,9 +347,10 @@ Matrix Excentricite::numerotation(int first_node){
             }
         }
     }
-
+    int numNodes = this->n;
+    vector<int> cmki(numNodes);
     cout<<"\nNumerotation : "<<endl;
-    cout<<"i     CM     CMI"<<endl;
+    cout<<"i     CMK     CMKI"<<endl;
     cout<<"----------------"<<endl;
     for(auto key:numerotation){
         int index = key.first;
@@ -351,36 +363,44 @@ Matrix Excentricite::numerotation(int first_node){
         cout<<endl;
     }
 
-    int numNodes = this->n;
-    vector<int> cmki(numNodes);
-    for(const auto& entry : numerotation){
-        int node = entry.first;
-        int cmk = entry.second.begin()->first;
-        //cout<<" cmk:"<<cmk<<endl;
-        int cmki_val = entry.second.begin()->second;
-        //cout<<" cmki_val:"<<cmki_val<<endl;
-        cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
-        //cout<<"cmki[cmk - 1] : "<<cmki[cmk - 1]<<endl;
-    }
+
+    //Construction de la matrice
 
     // Création de Mat_prim à partir de Mat en utilisant cmki
     Matrix Mat_prim(this->n, Vector (this->n, 0));
-    for(int i = 0; i < this->n; i++){
+    Vector c(this->n,0);
+
+    for(const auto& entry : numerotation){
+        int node = entry.first;
+        int cmk = entry.second.begin()->first;
+        int cmki = entry.second.begin()->second;
+        //cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
+        for(int i=0;i<this->n;i++){
+            Mat_prim[i][node - 1] = this->A[i][cmki - 1];
+        }
+    }
+
+    //displayMatrix(Mat_prim);
+    Matrix B(this->n,Vector (this->n,0));
+
+    for(const auto& entry : numerotation){
+        int node = entry.first;
+        int cmk = entry.second.begin()->first;
+        int cmki = entry.second.begin()->second;
+        //cout<<"node : "<<node<<" cmki : "<<cmki<<endl;
+
         for(int j=0;j<this->n;j++){
-            Mat_prim[i][j] = this->A[cmki[i] - 1][cmki[j] - 1]; // -1 pour l'indexation 0-based
+            B[node - 1][j] = Mat_prim[cmki -1][j];
         }
+        c[node - 1] = this->b[cmki - 1];
     }
 
-    // Afficher Mat_prim
-    cout << "\nNew matrix :" << endl;
-    for(const auto& row : Mat_prim){
-        for(const auto& val : row){
-            cout << val << " ";
-        }
-        cout << endl;
-    }
+    cout<<endl<<"La matrice apres Cuthill-Mc Kee inverse :\n"<<endl;
+    displayMatrix(B);
+    //displayVector(c);
 
-    return Mat_prim;
+
+    return B;
 }
 
 void Excentricite::diagonal(){
@@ -472,17 +492,18 @@ int main(){
     a.profil();
     a.displayGraph();
     cout<<endl;
-    int npf = a.stockage(a.get_matrix());
-    cout<<"=> NPF = "<<npf<<endl;
+    a.stockage(a.get_matrix());
+    cout<<"=> NPF = "<<a.get_npf()<<endl;
     int first_node = a.get_first_node();
     cout<<"--------------------"<<endl;
     Matrix B = a.numerotation(first_node);
-    int npf1 = a.stockage(B);
-    cout<<"=> NPF = "<<npf1<<endl;
+    a.initialize_stockage_profil();
+    a.stockage(B);
+    cout<<"\nNPF : "<<a.get_npf();
     a.diagonal();
     a.lower_resolution();
     a.upper_resolution();
-    cout<<"La solution est :\n";
+    cout<<"\nLa solution est :\n";
     a.displayVector(a.solution);
     a.generateDOT(a.get_matrix(),"test.dot");
     a.renderGraph("test.dot","output.png");
