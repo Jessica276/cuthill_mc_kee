@@ -50,8 +50,10 @@ class Excentricite{
         int get_npf();
         void initialize_stockage_profil();
         int get_first_node();
-        Matrix generate_numerotation(int first_node);Vector solution;
+        void generate_numerotation(int first_node);
+        Vector solution;
         void generate_graph_cmki();
+        Matrix generate_matrix();
         void diagonal();
         void lower_resolution();
         void upper_resolution();
@@ -305,7 +307,7 @@ int Excentricite::get_first_node(){
     return first_node;
 }
 
-Matrix Excentricite::generate_numerotation(int first_node){
+void Excentricite::generate_numerotation(int first_node){
     deque<int>file;
     set<int> visited;
     file.push_back(first_node);
@@ -368,43 +370,40 @@ Matrix Excentricite::generate_numerotation(int first_node){
     }
 
 
-    //Construction de la matrice
+    // //Construction de la matrice
 
-    // Création de Mat_prim à partir de Mat en utilisant cmki
-    Matrix Mat_prim(this->n, Vector (this->n, 0));
-    Vector c(this->n,0);
+    // // Création de Mat_prim à partir de Mat en utilisant cmki
+    // Matrix Mat_prim(this->n, Vector (this->n, 0));
+    // Vector c(this->n,0);
 
-    for(const auto& entry : numerotation){
-        int node = entry.first;
-        int cmk = entry.second.begin()->first;
-        int cmki = entry.second.begin()->second;
-        //cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
-        for(int i=0;i<this->n;i++){
-            Mat_prim[i][node - 1] = this->A[i][cmki - 1];
-        }
-    }
+    // for(const auto& entry : numerotation){
+    //     int node = entry.first;
+    //     int cmk = entry.second.begin()->first;
+    //     int cmki = entry.second.begin()->second;
+    //     //cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
+    //     for(int i=0;i<this->n;i++){
+    //         Mat_prim[i][node - 1] = this->A[i][cmki - 1];
+    //     }
+    // }
 
-    //displayMatrix(Mat_prim);
-    Matrix B(this->n,Vector (this->n,0));
+    // //displayMatrix(Mat_prim);
+    // Matrix B(this->n,Vector (this->n,0));
 
-    for(const auto& entry : numerotation){
-        int node = entry.first;
-        int cmk = entry.second.begin()->first;
-        int cmki = entry.second.begin()->second;
-        //cout<<"node : "<<node<<" cmki : "<<cmki<<endl;
+    // for(const auto& entry : numerotation){
+    //     int node = entry.first;
+    //     int cmk = entry.second.begin()->first;
+    //     int cmki = entry.second.begin()->second;
+    //     //cout<<"node : "<<node<<" cmki : "<<cmki<<endl;
 
-        for(int j=0;j<this->n;j++){
-            B[node - 1][j] = Mat_prim[cmki -1][j];
-        }
-        c[node - 1] = this->b[cmki - 1];
-    }
+    //     for(int j=0;j<this->n;j++){
+    //         B[node - 1][j] = Mat_prim[cmki -1][j];
+    //     }
+    //     c[node - 1] = this->b[cmki - 1];
+    // }
 
-    cout<<endl<<"La matrice apres Cuthill-Mc Kee inverse :\n"<<endl;
-    displayMatrix(B);
-    //displayVector(c);
-
-
-    return B;
+    // cout<<endl<<"La matrice apres Cuthill-Mc Kee inverse :\n"<<endl;
+    // displayMatrix(B);
+    // //displayVector(c);
 }
 
 void Excentricite::generate_graph_cmki(){
@@ -412,16 +411,23 @@ void Excentricite::generate_graph_cmki(){
         int node = cmk.first;
         vector<int> neighbors = cmk.second;
 
-        int temp_cmk = this->numerotation[node].begin()->first;
+        int temp_cmki = this->numerotation[node].begin()->second;
         //cout<<"temp_cmk "<<this->numerotation.size()<<endl;
 
         for(auto n:neighbors){
-            int valueCmk = this->numerotation[n].begin()->first;
-            this->graph_cmki[temp_cmk].push_back(valueCmk);
+            int valueCmki = this->numerotation[n].begin()->second;
+            this->graph_cmki[temp_cmki].push_back(valueCmki);
         }
     }
     displayGraph(graph_cmki);
 }
+
+// Matrix Excentricite::generate_matrix(){
+//     Matrix B
+
+
+//     return B;
+// }
 
 void Excentricite::diagonal(){
     float sum = 0;
@@ -517,7 +523,7 @@ int main(){
     int first_node = a.get_first_node();
 
     cout<<"--------------------"<<endl;
-    Matrix B = a.generate_numerotation(first_node);
+    a.generate_numerotation(first_node);
     a.generate_graph_cmki();
 
     // a.initialize_stockage_profil();
