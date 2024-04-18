@@ -24,6 +24,8 @@ class Excentricite{
         Vector nDiag;
         Vector b;       //second membre
         int max_length;
+        map<int,vector<int>> graph_cmki;
+        map<int,map<int,int>> numerotation;
     public:
         map<int,vector<int>>graph;
         map<int,int>length_neighbor;
@@ -33,7 +35,7 @@ class Excentricite{
         void displayVector(Vector V);
         void initializeData();
         void profil();
-        void displayGraph();
+        void displayGraph(map<int,vector<int>> graph);
         Matrix get_matrix();
         void set_maxL(int noeud);
         int min_path(int noeud,int dest);
@@ -48,7 +50,8 @@ class Excentricite{
         int get_npf();
         void initialize_stockage_profil();
         int get_first_node();
-        Matrix numerotation(int first_node);Vector solution;
+        Matrix generate_numerotation(int first_node);Vector solution;
+        void generate_graph_cmki();
         void diagonal();
         void lower_resolution();
         void upper_resolution();
@@ -58,6 +61,7 @@ class Excentricite{
 
 Excentricite::Excentricite(){
     this->initializeData();
+    this->solution.resize(this->n, 0.0);
 }
 
 Excentricite::~Excentricite(){
@@ -174,17 +178,17 @@ void Excentricite::profil(){
     }
 }
 
-void Excentricite::displayGraph(){
+void Excentricite::displayGraph(map<int,vector<int>> graph){
     for(int i=1;i<=this->n;i++){
-        vector<int>& neighbor = this->graph[i];
+        vector<int>& neighbor = graph[i];
         cout<<"Node s neighbors "<<i<<" : ";
 
         for(int n:neighbor){
             cout<<n<<" ";
         }
         cout<<endl;
-        length_neighbor.insert(make_pair(i,neighbor.size()));
-        // cout<<"Length of "<<i<<" : "<<neighbor.size()<<endl;
+        // length_neighbor.insert(make_pair(i,neighbor.size()));
+        // // cout<<"Length of "<<i<<" : "<<neighbor.size()<<endl;
     }
 }
 
@@ -301,7 +305,7 @@ int Excentricite::get_first_node(){
     return first_node;
 }
 
-Matrix Excentricite::numerotation(int first_node){
+Matrix Excentricite::generate_numerotation(int first_node){
     deque<int>file;
     set<int> visited;
     file.push_back(first_node);
@@ -309,7 +313,7 @@ Matrix Excentricite::numerotation(int first_node){
     visited.insert(first_node);
     vector<int>N;
     int counter = 1;
-    map<int,map<int,int>> numerotation;
+
     map<int,int> cuthill;
     cuthill.insert(make_pair(counter,(this->n+1)-counter));
     numerotation.insert(make_pair(first_node,cuthill));
@@ -403,6 +407,22 @@ Matrix Excentricite::numerotation(int first_node){
     return B;
 }
 
+void Excentricite::generate_graph_cmki(){
+    for(auto cmk:this->graph){
+        int node = cmk.first;
+        vector<int> neighbors = cmk.second;
+
+        int temp_cmk = this->numerotation[node].begin()->first;
+        //cout<<"temp_cmk "<<this->numerotation.size()<<endl;
+
+        for(auto n:neighbors){
+            int valueCmk = this->numerotation[n].begin()->first;
+            this->graph_cmki[temp_cmk].push_back(valueCmk);
+        }
+    }
+    displayGraph(graph_cmki);
+}
+
 void Excentricite::diagonal(){
     float sum = 0;
     for(int i=0; i<int(this->nDiag.size());i++){
@@ -490,23 +510,26 @@ int main(){
     Excentricite a;
     a.displayMatrix(a.get_matrix());
     a.profil();
-    a.displayGraph();
+    a.displayGraph(a.graph);
     cout<<endl;
     a.stockage(a.get_matrix());
     cout<<"=> NPF = "<<a.get_npf()<<endl;
     int first_node = a.get_first_node();
+
     cout<<"--------------------"<<endl;
-    Matrix B = a.numerotation(first_node);
-    a.initialize_stockage_profil();
-    a.stockage(B);
-    cout<<"\nNPF : "<<a.get_npf();
-    a.diagonal();
-    a.lower_resolution();
-    a.upper_resolution();
-    cout<<"\nLa solution est :\n";
-    a.displayVector(a.solution);
-    a.generateDOT(a.get_matrix(),"test.dot");
-    a.renderGraph("test.dot","output.png");
+    Matrix B = a.generate_numerotation(first_node);
+    a.generate_graph_cmki();
+
+    // a.initialize_stockage_profil();
+    // a.stockage(B);
+    // cout<<"\nNPF : "<<a.get_npf();
+    // a.diagonal();
+    // a.lower_resolution();
+    // a.upper_resolution();
+    // cout<<"\nLa solution est :\n";
+    // a.displayVector(a.solution);
+    // a.generateDOT(a.get_matrix(),"test.dot");
+    // a.renderGraph("test.dot","output.png");
 
     return(0);
 }
