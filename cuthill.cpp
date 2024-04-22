@@ -52,8 +52,7 @@ class Excentricite{
         int get_first_node();
         void generate_numerotation(int first_node);
         Vector solution;
-        void generate_graph_cmki();
-        Matrix generate_matrix();
+        Matrix generate_graph_cmki();
         void diagonal();
         void lower_resolution();
         void upper_resolution();
@@ -189,14 +188,12 @@ void Excentricite::displayGraph(map<int,vector<int>> graph){
             cout<<n<<" ";
         }
         cout<<endl;
-        // length_neighbor.insert(make_pair(i,neighbor.size()));
-        // // cout<<"Length of "<<i<<" : "<<neighbor.size()<<endl;
     }
 }
 
 void Excentricite::stockage(Matrix A){
     int count = 1;
-    int npf = 0;
+
     for(int i=0;i<this->n;i++){
         int indice = 0;
         bool passage = false;
@@ -368,66 +365,34 @@ void Excentricite::generate_numerotation(int first_node){
         }
         cout<<endl;
     }
-
-
-    // //Construction de la matrice
-
-    // // Création de Mat_prim à partir de Mat en utilisant cmki
-    // Matrix Mat_prim(this->n, Vector (this->n, 0));
-    // Vector c(this->n,0);
-
-    // for(const auto& entry : numerotation){
-    //     int node = entry.first;
-    //     int cmk = entry.second.begin()->first;
-    //     int cmki = entry.second.begin()->second;
-    //     //cmki[cmk - 1] = cmki_val; // -1 pour l'indexation 0-based
-    //     for(int i=0;i<this->n;i++){
-    //         Mat_prim[i][node - 1] = this->A[i][cmki - 1];
-    //     }
-    // }
-
-    // //displayMatrix(Mat_prim);
-    // Matrix B(this->n,Vector (this->n,0));
-
-    // for(const auto& entry : numerotation){
-    //     int node = entry.first;
-    //     int cmk = entry.second.begin()->first;
-    //     int cmki = entry.second.begin()->second;
-    //     //cout<<"node : "<<node<<" cmki : "<<cmki<<endl;
-
-    //     for(int j=0;j<this->n;j++){
-    //         B[node - 1][j] = Mat_prim[cmki -1][j];
-    //     }
-    //     c[node - 1] = this->b[cmki - 1];
-    // }
-
-    // cout<<endl<<"La matrice apres Cuthill-Mc Kee inverse :\n"<<endl;
-    // displayMatrix(B);
-    // //displayVector(c);
 }
 
-void Excentricite::generate_graph_cmki(){
+Matrix Excentricite::generate_graph_cmki(){
+    Matrix B(this->n,Vector (this->n,0));
+    Vector c(this->n,0);
     for(auto cmk:this->graph){
         int node = cmk.first;
         vector<int> neighbors = cmk.second;
 
         int temp_cmki = this->numerotation[node].begin()->second;
         //cout<<"temp_cmk "<<this->numerotation.size()<<endl;
-
+        B[temp_cmki-1][temp_cmki-1] = A[node-1][node-1];
+        c[temp_cmki-1] = this->b[node-1];
         for(auto n:neighbors){
             int valueCmki = this->numerotation[n].begin()->second;
+            B[temp_cmki-1][valueCmki-1] = A[node-1][n-1];
             this->graph_cmki[temp_cmki].push_back(valueCmki);
         }
     }
-    displayGraph(graph_cmki);
+
+   
+
+    cout<<"\nAinsi la nouvelle matrice :"<<endl;
+    this->b = c;
+    displayMatrix(B);
+
+    return B;
 }
-
-// Matrix Excentricite::generate_matrix(){
-//     Matrix B
-
-
-//     return B;
-// }
 
 void Excentricite::diagonal(){
     float sum = 0;
@@ -524,18 +489,18 @@ int main(){
 
     cout<<"--------------------"<<endl;
     a.generate_numerotation(first_node);
-    a.generate_graph_cmki();
+    Matrix B = a.generate_graph_cmki();
 
-    // a.initialize_stockage_profil();
-    // a.stockage(B);
-    // cout<<"\nNPF : "<<a.get_npf();
-    // a.diagonal();
-    // a.lower_resolution();
-    // a.upper_resolution();
-    // cout<<"\nLa solution est :\n";
-    // a.displayVector(a.solution);
-    // a.generateDOT(a.get_matrix(),"test.dot");
-    // a.renderGraph("test.dot","output.png");
+    a.initialize_stockage_profil();
+    a.stockage(B);
+    cout<<"\nNPF : "<<a.get_npf();
+    a.diagonal();
+    a.lower_resolution();
+    a.upper_resolution();
+    cout<<"\nLa solution est :\n";
+    a.displayVector(a.solution);
+    a.generateDOT(a.get_matrix(),"test.dot");
+    a.renderGraph("test.dot","output.png");
 
     return(0);
 }
